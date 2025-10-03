@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Chat App</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+body {
+font-family: 'Inter', sans-serif;
+background-color: #f0f2f5;
+}
+.scrollbar-w-2::-webkit-scrollbar {
+width: 0.5rem;
+}
+.scrollbar-w-2::-webkit-scrollbar-thumb {
+background-color: #d1d5db;
+border-radius: 9999px;
+}
+.scrollbar-w-2::-webkit-scrollbar-track {
+background-color: #f3f4f6;
+}
+.emoji-picker-container {
+position: absolute;
+bottom: 100%;
+right: 0;
+margin-bottom: 0.5rem;
+width: 20rem;
+background-color: white;
+border-radius: 0.75rem;
+box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+display: none;
+flex-wrap: wrap;
+padding: 0.5rem;
+max-height: 12rem;
+overflow-y: auto;
+z-index: 10;
+}
+.emoji-picker-container.visible {
+display: flex;
+}
+.emoji {
+font-size: 1.5rem;
+padding: 0.25rem;
+cursor: pointer;
+transition: transform 0.1s ease-in-out;
+}
+.emoji:hover {
+transform: scale(1.1);
+}
+.message-bubble {
+cursor: pointer;
+}
+#chat-header-profile {
+transition: background-color 0.3s;
+}
+#chat-header-profile:hover {
+background-color: #f3f4f6;
+}
+</style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+<!-- Main Container -->
+<div id="main-container" class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] flex overflow-hidden">
+
+<!-- Splash Screen / Login View -->
+<div id="auth-view" class="flex flex-col items-center justify-center p-8 w-full text-center">
+<h1 class="text-5xl font-bold text-gray-800 mb-4 animate-fade-in">Hello, Welcome to Chat App!</h1>
+<p class="text-lg text-gray-600 mb-8 animate-fade-in delay-200">
+Please sign in to continue.
+</p>
+<button id="google-signin-btn" disabled
+class="bg-blue-600 text-white font-semibold py-3 px-8 rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center animate-fade-in delay-400">
+<svg class="w-6 h-6 inline mr-3 -mt-1" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M44.5 20H24V28.5H35.5C34.8 32.5 32.2 35.8 28.5 38.3V44.8C35.7 43.1 41.5 37.6 44.5 30.5L44.5 20Z"
+fill="#4285F4" />
+<path
+d="M24 44.9C30.6 44.9 36.2 42.8 40.5 39.2L34.1 33.3C31.5 35.1 28 36.2 24 36.2C17.5 36.2 12.1 31.7 10.3 25.4H3.8V31.8C6.9 38.2 14.8 42.9 24 42.9C27.9 42.9 31.5 42.1 34.5 40.7L40.2 44.9H24Z"
+fill="#34A853" />
+<path d="M10.3 25.4V20H16.8V25.4H10.3Z" fill="#FBBC05" />
+<path
+d="M24 11.9C27.9 11.9 31.1 13.3 33.7 15.6L39.4 10.2C35.8 6.7 30.2 4.9 24 4.9C14.8 4.9 6.9 9.6 3.8 16H10.3C12.1 11.7 17.5 8.2 24 8.2V11.9Z"
+fill="#EA4335" />
+</svg>
+Sign in with Google
+</button>
+</div>
+
+<!-- Chat View -->
+<div id="chat-view" class="flex w-full h-full hidden">
+<!-- Sidebar / Friend List -->
+<div id="friend-list-container" class="w-1/3 bg-gray-50 border-r border-gray-200 flex flex-col p-4">
+<div class="flex items-center justify-between pb-4 border-b border-gray-200">
+<h2 class="text-2xl font-bold text-gray-800">Chats</h2>
+<div class="flex items-center space-x-2">
+<button id="add-profile-btn"
+class="bg-blue-500 text-white rounded-full p-2 hover:bg-blue-600 transition-colors">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+<path
+d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4a3 3 0 110 6 3 3 0 010-6zm-7.73 14c.73-1.63 2.92-3 5.73-3s5 .8 5.73 3H4.27zM12 20c-2.61 0-4.88-.95-6.52-2.58A8.01 8.01 0 0112 14c2.62 0 4.88.95 6.52 2.58A8.01 8.01 0 0112 20z" />
+</svg>
+</button>
+<button id="add-friend-btn"
+class="bg-green-500 text-white rounded-full p-2 hover:bg-green-600 transition-colors">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+<path fill-rule="evenodd"
+d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+clip-rule="evenodd" />
+</svg>
+</button>
+<button id="sign-out-btn"
+class="bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+<path fill-rule="evenodd"
+d="M3 3a1 1 0 011-1h6a1 1 0 110 2H4v10h10v-5a1 1 0 112 0v5a2 2 0 01-2 2H4a2 2 0 01-2-2V4a2 2 0 012-2z"
+clip-rule="evenodd" />
+<path fill-rule="evenodd"
+d="M16.474 8.526a1 1 0 010 1.414l-4.5 4.5a1 1 0 01-1.414-1.414L13.086 10H8a1 1 0 110-2h5.086l-2.52-2.52a1 1 0 011.414-1.414l4.5 4.5z"
+clip-rule="evenodd" />
+</svg>
+</button>
+</div>
+</div>
+<ul id="friend-list" class="flex-1 overflow-y-auto mt-4 space-y-2">
+<!-- Friend items will be dynamically added here -->
+</ul>
+<div class="mt-4 text-xs text-gray-500 text-center">
+<p>Your User ID:</p>
+<p id="user-id-display" class="font-mono text-gray-600 break-all"></p>
+</div>
+</div>
+
+<!-- Chat Window -->
+<div id="chat-window" class="w-2/3 flex flex-col bg-white hidden">
+<!-- Chat Header -->
+<div class="p-4 bg-white border-b border-gray-200 flex items-center justify-between">
+<div class="flex items-center cursor-pointer p-2 rounded-xl" id="chat-header-profile">
+<div id="active-chat-avatar"
+class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center font-bold text-white text-lg mr-4">
+</div>
+<div>
+<h3 id="active-chat-name" class="text-lg font-semibold text-gray-800"></h3>
+<p id="active-chat-status" class="text-xs text-gray-500"></p>
+</div>
+</div>
+<!-- Calling and Settings Buttons -->
+<div class="flex items-center space-x-2">
+<!-- AI Auto-Reply Toggle Button (NEW FEATURE) -->
+<button id="ai-toggle-btn"
+class="bg-purple-500 text-white rounded-full p-2 hover:bg-purple-600 transition-colors shadow-md transform hover:scale-105"
+title="Toggle AI Auto-Reply">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm4.5-9.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5-1.5.67-1.5 1.5.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5-1.5.67-1.5 1.5.67 1.5 1.5 1.5zm3.5 6c-2.33 0-4.32-1.42-5.18-3.41l.77-.38c.78 1.63 2.5 2.79 4.41 2.79s3.63-1.16 4.41-2.79l.77.38c-.86 1.99-2.85 3.41-5.18 3.41z"/>
+</svg>
+</button>
+<!-- Video Call Button -->
+<button id="video-call-btn" class="bg-gray-200 text-gray-600 rounded-full p-2 hover:bg-gray-300 transition-colors shadow-md">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+<path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+</svg>
+</button>
+<!-- Voice Call Button -->
+<button id="call-btn"
+class="bg-gray-200 text-gray-600 rounded-full p-2 hover:bg-gray-300 transition-colors shadow-md">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+<path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.74 21 3 13.26 3 4c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.46.57 3.57.11.35.03.74-.24 1.02l-2.2 2.2z" />
+</svg>
+</button>
+<!-- Settings Button -->
+<button id="settings-btn"
+class="bg-gray-200 text-gray-600 rounded-full p-2 hover:bg-gray-300 transition-colors shadow-md">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+<path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+</svg>
+</button>
+</div>
+</div>
+
+<!-- Chat History -->
+<div id="message-container" class="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-w-2">
+<!-- Messages will be dynamically added here -->
+</div>
+
+<!-- Message Input -->
+<div class="relative p-4 bg-white border-t border-gray-200">
+<div id="emoji-picker" class="emoji-picker-container hidden"></div>
+<div id="reply-bar" class="absolute bottom-full left-0 right-0 bg-gray-100 border-t border-gray-200 p-2 rounded-t-lg hidden">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-xs text-gray-500 font-semibold">Replying to:</p>
+<p id="reply-sender" class="text-sm font-bold text-blue-600"></p>
+<p id="reply-text" class="text-xs text-gray-700 truncate max-w-xs"></p>
+</div>
+<button id="cancel-reply-btn" class="text-gray-500 hover:text-gray-700">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+</svg>
+</button>
+</div>
+</div>
+<div class="flex items-center space-x-2">
+<button id="emoji-btn"
+class="bg-gray-200 text-gray-600 rounded-full p-2 hover:bg-gray-300 transition-colors shadow-md">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+<path
+d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2.5-9.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 15.5c-1.39 0-2.88-.38-4.3-.9-1.42-.51-2.92-.85-4.48-.85a.5.5 0 010-1c1.56 0 3.06.34 4.48.85 1.42.52 2.91.9 4.3.9a.5.5 0 010 1zM17.5 11a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+</svg>
+</button>
+<textarea id="message-input"
+class="flex-1 p-3 border border-gray-300 rounded-full focus:outline-none focus:border-green-500 transition-colors resize-none"
+rows="1" placeholder="Type a message..."></textarea>
+<button id="send-btn"
+class="bg-green-500 text-white rounded-full p-3 hover:bg-green-600 transition-colors shadow-md">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Loading and Modal Overlays -->
+<div id="loading-overlay"
+class="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 z-50 hidden">
+<div class="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
+</div>
+
+<!-- Generic Modal Overlay -->
+<div id="modal-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+<div class="bg-white rounded-xl shadow-lg p-6 w-96">
+<h3 id="modal-title" class="text-xl font-bold mb-4 text-gray-800"></h3>
+<p id="modal-message" class="text-gray-600 mb-4"></p>
+<!-- Timer Input Field Added -->
+<input type="number" id="modal-timer-input"
+class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 hidden mb-4"
+placeholder="Enter duration in minutes">
+<input type="email" id="modal-input"
+class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 hidden mb-4"
+placeholder="Enter friend's email">
+<div id="modal-buttons" class="flex justify-end space-x-2">
+<button id="modal-cancel-btn"
+class="px-4 py-2 bg-gray-300 text-gray-800 rounded-full hover:bg-gray-400">Cancel</button>
+<button id="modal-confirm-btn"
+class="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 hidden">Add</button>
+<button id="modal-ok-btn"
+class="px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600">OK</button>
+</div>
+</div>
+</div>
+
+<!-- User Profile Modal -->
+<div id="profile-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+<div class="bg-white rounded-xl shadow-lg p-6 w-96 max-w-lg text-center">
+<div class="flex justify-end mb-4">
+<button id="close-profile-btn" class="text-gray-500 hover:text-gray-700">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+</svg>
+</button>
+</div>
+<img id="profile-pic-modal" src="https://placehold.co/150x150" class="w-32 h-32 rounded-full mx-auto mb-4 object-cover" />
+<h3 id="profile-name-modal" class="text-2xl font-bold text-gray-800 mb-2"></h3>
+<p id="profile-status-modal" class="text-gray-600 text-sm mb-4"></p>
+<button id="block-btn" class="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 transition-colors mb-2">Block</button>
+<button id="unblock-btn" class="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600 transition-colors hidden mb-2">Unblock</button>
+</div>
+</div>
+
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+<div class="bg-white rounded-xl shadow-lg p-6 w-96 max-w-lg">
+<h3 class="text-xl font-bold mb-4 text-gray-800">Settings</h3>
+
+<!-- Profile Picture Section -->
+<div class="mb-6">
+<h4 class="font-semibold text-gray-700 mb-2">Profile Picture</h4>
+<div class="flex items-center mb-4">
+<img id="current-profile-pic" src="https://placehold.co/100x100" class="w-16 h-16 rounded-full mr-4 object-cover" />
+<div>
+<input type="file" id="profile-pic-input" accept="image/*" class="hidden">
+<label for="profile-pic-input" class="bg-blue-500 text-white px-4 py-2 rounded-full cursor-pointer hover:bg-blue-600 transition-colors">
+Change Picture
+</label>
+</div>
+</div>
+<div id="upload-progress-container" class="w-full bg-gray-200 rounded-full h-2.5 mb-4 hidden">
+<div id="upload-progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+</div>
+</div>
+
+<!-- Status Section -->
+<div class="mb-6">
+<h4 class="font-semibold text-gray-700 mb-2">My Status</h4>
+<input type="text" id="status-input" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Write your status...">
+<button id="save-status-btn" class="mt-3 w-full bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600 transition-colors">
+Save Status
+</button>
+</div>
+
+<div class="flex justify-end">
+<button id="close-settings-btn" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-full hover:bg-gray-400">Close</button>
+</div>
+</div>
+</div>
+
+<!-- Calling Modal -->
+<div id="calling-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+<div class="bg-white rounded-xl shadow-lg p-6 w-96 text-center">
+<h3 class="text-2xl font-bold mb-4 text-gray-800" id="calling-text"></h3>
+<p class="text-gray-600 mb-6" id="calling-name"></p>
+<div class="flex justify-center">
+<button id="end-call-btn" class="bg-red-500 text-white p-4 rounded-full hover:bg-red-600 transition-colors">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
+<path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.74 21 3 13.26 3 4c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.46.57 3.57.11.35.03.74-.24 1.02l-2.2 2.2z" />
+</svg>
+</button>
+</div>
+</div>
+</div>
+
+<!-- Video Calling Modal -->
+<div id="video-calling-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+<div class="bg-white rounded-xl shadow-lg p-6 w-96 text-center">
+<h3 class="text-2xl font-bold mb-4 text-gray-800" id="video-calling-text"></h3>
+<p class="text-gray-600 mb-6" id="video-calling-name"></p>
+<div class="flex justify-center">
+<button id="end-video-call-btn" class="bg-red-500 text-white p-4 rounded-full hover:bg-red-600 transition-colors">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
+<path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.74 21 3 13.26 3 4c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.46.57 3.57.11.35.03.74-.24 1.02l-2.2 2.2z" />
+</svg>
+</button>
+</div>
+</div>
+</div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, onSnapshot, collection, query, where, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-storage.js";
+
+const firebaseConfig = {
+  // NEW FIREBASE CONFIGURATION (Project: chat-bdd0e)
+  apiKey: "AIzaSyA0VcbAQSJayM29xfylJtWEnavFAdpW9pE",
+  authDomain: "chat-bdd0e.firebaseapp.com",
+  projectId: "chat-bdd0e",
+  storageBucket: "chat-bdd0e.firebasestorage.app",
+  messagingSenderId: "730141286851",
+  appId: "1:730141286851:web:0588bc0f12d8eddc6a5d76",
+  measurementId: "G-37NQ1V939Y"
+};
+const appId = firebaseConfig.appId;
+
+let app, auth, db, storage, userId;
+let activeChatId = null;
+let activeFriendData = null;
+let isFirebaseInitialized = false;
+let unsubscribeChatListener = null;
+let unsubscribeFriendStatus = null;
+let replyToMessage = null;
+let statusUpdateInterval;
+
+// --- NEW AI FEATURE STATE ---
+let isAIToggled = false;
+let aiTimerId = null;
+// --- END NEW AI FEATURE STATE ---
+
+const authView = document.getElementById('auth-view');
+const chatView = document.getElementById('chat-view');
+const googleSignInBtn = document.getElementById('google-signin-btn');
+const signOutBtn = document.getElementById('sign-out-btn');
+const addFriendBtn = document.getElementById('add-friend-btn');
+const messageInput = document.getElementById('message-input');
+const sendBtn = document.getElementById('send-btn');
+const messageContainer = document.getElementById('message-container');
+const friendList = document.getElementById('friend-list');
+const userIdDisplay = document.getElementById('user-id-display');
+const chatWindow = document.getElementById('chat-window');
+const activeChatName = document.getElementById('active-chat-name');
+const activeChatAvatar = document.getElementById('active-chat-avatar');
+const addProfileBtn = document.getElementById('add-profile-btn');
+const activeChatStatus = document.getElementById('active-chat-status');
+const chatHeaderProfile = document.getElementById('chat-header-profile');
+
+const loadingOverlay = document.getElementById('loading-overlay');
+const modalOverlay = document.getElementById('modal-overlay');
+const modalTitle = document.getElementById('modal-title');
+const modalMessage = document.getElementById('modal-message');
+const modalInput = document.getElementById('modal-input');
+const modalTimerInput = document.getElementById('modal-timer-input'); // NEW
+const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+const modalCancelBtn = document.getElementById('modal-cancel-btn');
+const modalOkBtn = document.getElementById('modal-ok-btn');
+
+const emojiBtn = document.getElementById('emoji-btn');
+const emojiPicker = document.getElementById('emoji-picker');
+const emojis = [
+'😀', '😂', '😍', '👍', '🙏', '😊', '😭', '❤️', '🤩', '😎',
+'🥳', '🤗', '🤔', '🤨', '🤫', '😇', '😈', '👽', '👾', '🤖',
+'💩', '👻', '💀', '💯', '✅', '❌', '🔥', '🎉', '🎊', '🎈',
+'🎂', '🎁', '🎄', '🎅', '🎃', '🍂', '🍁', '❄️', '🌈', '☀️',
+'☔', '⚡', '💧', '🌊', '🍎', '🍌', '🍒', '🍓', '🍕', '🍔',
+'🍟', '🍗', '🌮', '🍣', '🍜', '🍩', '🍦', '☕', '🍺', '🍾',
+];
+
+const settingsBtn = document.getElementById('settings-btn');
+const settingsModal = document.getElementById('settings-modal');
+const closeSettingsBtn = document.getElementById('close-settings-btn');
+const statusInput = document.getElementById('status-input');
+const saveStatusBtn = document.getElementById('save-status-btn');
+const profilePicInput = document.getElementById('profile-pic-input');
+const currentProfilePic = document.getElementById('current-profile-pic');
+const uploadProgressContainer = document.getElementById('upload-progress-container');
+const uploadProgressBar = document.getElementById('upload-progress-bar');
+const callBtn = document.getElementById('call-btn');
+const videoCallBtn = document.getElementById('video-call-btn');
+const callingModal = document.getElementById('calling-modal');
+const endCallBtn = document.getElementById('end-call-btn');
+const callingText = document.getElementById('calling-text');
+const callingName = document.getElementById('calling-name');
+const videoCallingModal = document.getElementById('video-calling-modal');
+const endVideoCallBtn = document.getElementById('end-video-call-btn');
+const videoCallingText = document.getElementById('video-calling-text');
+const videoCallingName = document.getElementById('video-calling-name');
+const profileModal = document.getElementById('profile-modal');
+const closeProfileBtn = document.getElementById('close-profile-btn');
+const profilePicModal = document.getElementById('profile-pic-modal');
+const profileNameModal = document.getElementById('profile-name-modal');
+const profileStatusModal = document.getElementById('profile-status-modal');
+const blockBtn = document.getElementById('block-btn');
+const unblockBtn = document.getElementById('unblock-btn');
+
+const replyBar = document.getElementById('reply-bar');
+const replySender = document.getElementById('reply-sender');
+const replyText = document.getElementById('reply-text');
+const cancelReplyBtn = document.getElementById('cancel-reply-btn');
+const aiToggleBtn = document.getElementById('ai-toggle-btn'); // NEW
+
+// --- NEW AI FEATURE FUNCTIONS ---
+
+const getAIResponse = async (prompt) => {
+    // !!! IMPORTANT !!!
+    // PASTE YOUR GEMINI API KEY HERE. This is insecure for production;
+    // use a secure backend service to proxy calls for real applications.
+    const API_KEY = "AIzaSyBfdjHL2DN8swGFZn5PwbvLQCOpHE5xJj8"; // <-- REPLACE THIS WITH YOUR KEY
+    const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+
+    const systemPrompt = "You are a friendly, empathetic, and natural chat assistant. Your goal is to keep the conversation flowing. Analyze the user's message and generate a concise, contextually appropriate response. Reply in the same language (Hindi or English) as the user's message, but always use a friendly tone.";
+
+    const payload = {
+        contents: [
+            {
+                parts: [{ text: prompt }]
+            }
+        ],
+        systemInstruction: {
+            parts: [{ text: systemPrompt }]
+        },
+    };
+
+    try {
+        const response = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Gemini API Error:", errorData);
+            throw new Error(`API call failed with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const aiMessage = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (aiMessage) {
+            return aiMessage.trim();
+        } else {
+            return "I'm sorry, I couldn't generate a reply right now.";
+        }
+    } catch (error) {
+        console.error("Error fetching AI response:", error);
+        return "Oops! AI service is temporarily unavailable.";
+    }
+};
+
+const toggleAI = (enable, minutes = null) => {
+    isAIToggled = enable;
+    if (aiTimerId) clearTimeout(aiTimerId);
+    aiTimerId = null;
+
+    if (enable) {
+        aiToggleBtn.classList.remove('bg-purple-500', 'hover:bg-purple-600');
+        aiToggleBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+        if (minutes) {
+             // Set timer
+            aiTimerId = setTimeout(() => {
+                toggleAI(false);
+                showModal("AI Auto-Reply", `AI auto-reply timer finished! It has been turned off after ${minutes} minutes.`, false);
+            }, minutes * 60 * 1000);
+            showModal("AI Activated", `AI Auto-Reply is ON for ${minutes} minutes.`);
+        } else {
+            showModal("AI Activated", "AI Auto-Reply is ON (No timer set).");
+        }
+    } else {
+        aiToggleBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+        aiToggleBtn.classList.add('bg-purple-500', 'hover:bg-purple-600');
+        if (!minutes) { // Only show modal if triggered manually, not by timer finishing
+            showModal("AI Deactivated", "AI Auto-Reply is now OFF.");
+        }
+    }
+};
+
+aiToggleBtn.addEventListener('click', () => {
+    if (!activeChatId) {
+        showModal("Error", "Please select a friend before toggling the AI feature.");
+        return;
+    }
+    
+    if (isAIToggled) {
+        // Manual OFF
+        toggleAI(false);
+    } else {
+        // Manual ON - Show timer modal
+        modalTitle.textContent = "Activate AI Auto-Reply";
+        modalMessage.textContent = "Enter a duration in minutes for the AI to reply, or leave blank for unlimited (until manually turned off).";
+        modalInput.style.display = 'none';
+        modalTimerInput.style.display = 'block';
+        modalConfirmBtn.textContent = 'Activate';
+        modalConfirmBtn.style.display = 'block';
+        modalCancelBtn.style.display = 'block';
+        modalOkBtn.style.display = 'none';
+        modalOverlay.style.display = 'flex';
+        modalTimerInput.value = '';
+        
+        modalConfirmBtn.onclick = () => {
+            const minutes = parseInt(modalTimerInput.value) || 0;
+            hideModal();
+            toggleAI(true, minutes > 0 ? minutes : null);
+            // Reset confirm button action to default (Add Friend)
+            modalConfirmBtn.onclick = () => confirmModalAction();
+        };
+    }
+});
+// --- END NEW AI FEATURE FUNCTIONS ---
+
+
+const showLoading = (show) => {
+loadingOverlay.style.display = show ? 'flex' : 'none';
+};
+
+const showModal = (title, message, isInput = false, inputPlaceholder = '', confirmText = 'OK') => {
+modalTitle.textContent = title;
+modalMessage.textContent = message;
+modalInput.style.display = isInput && confirmText === 'Add' ? 'block' : 'none';
+modalTimerInput.style.display = 'none'; // Ensure timer input is hidden by default
+modalInput.placeholder = inputPlaceholder;
+modalConfirmBtn.textContent = confirmText;
+modalConfirmBtn.style.display = isInput ? 'block' : 'none';
+modalCancelBtn.style.display = isInput ? 'block' : 'none';
+modalOkBtn.style.display = isInput ? 'none' : 'block';
+modalOverlay.style.display = 'flex';
+modalInput.value = '';
+};
+
+const hideModal = () => {
+modalOverlay.style.display = 'none';
+// Reset confirm button action to default (Add Friend)
+modalConfirmBtn.onclick = () => confirmModalAction();
+};
+
+const formatLastSeen = (timestamp) => {
+if (!timestamp) return 'Offline';
+const now = new Date();
+const lastSeenDate = timestamp.toDate();
+const diffInSeconds = Math.floor((now - lastSeenDate) / 1000);
+const diffInMinutes = Math.floor(diffInSeconds / 60);
+const diffInHours = Math.floor(diffInMinutes / 60);
+const diffInDays = Math.floor(diffInHours / 24);
+
+if (diffInSeconds < 30) return 'Online';
+if (diffInMinutes < 1) return 'Last seen just now';
+if (diffInMinutes < 60) return `Last seen ${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+if (diffInHours < 24) return `Last seen ${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+if (diffInDays < 7) return `Last seen ${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+return `Last seen ${lastSeenDate.toLocaleDateString()}`;
+};
+
+const generateChatId = (user1, user2) => {
+return [user1, user2].sort().join('_');
+};
+
+const initFirebase = async () => {
+showLoading(true);
+try {
+if (!isFirebaseInitialized) {
+app = initializeApp(firebaseConfig);
+auth = getAuth(app);
+db = getFirestore(app);
+storage = getStorage(app);
+isFirebaseInitialized = true;
+}
+
+onAuthStateChanged(auth, async (user) => {
+if (user) {
+userId = user.uid;
+const userEmail = user.email || 'N/A';
+userIdDisplay.textContent = `User ID: ${userId}, Email: ${userEmail}`;
+
+const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}`);
+
+await setDoc(userDocRef, {
+name: user.displayName,
+email: user.email,
+lastSeen: serverTimestamp(),
+activeChatId: null,
+status: '',
+blockedUsers: []
+}, { merge: true });
+
+statusUpdateInterval = setInterval(async () => {
+if (auth.currentUser) {
+await updateDoc(userDocRef, {
+lastSeen: serverTimestamp()
+});
+} else {
+clearInterval(statusUpdateInterval);
+}
+}, 30000);
+
+window.addEventListener('beforeunload', async () => {
+if (userId) {
+await updateDoc(userDocRef, {
+lastSeen: serverTimestamp(),
+activeChatId: null,
+});
+}
+});
+
+authView.classList.add('hidden');
+chatView.classList.remove('hidden');
+showLoading(false);
+setupListeners(user);
+// Initialize AI button state
+toggleAI(false, true);
+} else {
+userId = null;
+authView.classList.remove('hidden');
+chatView.classList.add('hidden');
+showLoading(false);
+googleSignInBtn.disabled = false;
+clearInterval(statusUpdateInterval);
+}
+});
+} catch (error) {
+showLoading(false);
+console.error("Firebase initialization failed:", error);
+showModal("Error", "Failed to initialize the app. Please check your Firebase configuration and internet connection.");
+googleSignInBtn.disabled = true;
+}
+};
+
+const setupListeners = (user) => {
+onSnapshot(doc(db, `artifacts/${appId}/users/${user.uid}`), (docSnapshot) => {
+if (docSnapshot.exists()) {
+const userData = docSnapshot.data();
+const friends = userData.friends || [];
+
+friendList.innerHTML = '';
+if (friends.length === 0) {
+friendList.innerHTML = '<p class="text-center text-gray-400 mt-4">No friends added. Add someone to start chatting!</p>';
+}
+friends.forEach(friend => {
+const li = document.createElement('li');
+li.className = 'flex items-center p-3 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors';
+li.dataset.friendId = friend.id;
+li.dataset.friendName = friend.name;
+li.dataset.friendEmail = friend.email;
+li.onclick = () => selectChat(friend);
+
+const avatar = document.createElement('div');
+avatar.className = 'w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white mr-3';
+if (friend.profilePicUrl) {
+avatar.innerHTML = `<img src="${friend.profilePicUrl}" class="w-full h-full rounded-full object-cover">`;
+} else {
+avatar.textContent = friend.name.charAt(0).toUpperCase();
+}
+
+const textContainer = document.createElement('div');
+const nameEl = document.createElement('h4');
+nameEl.className = 'font-semibold text-gray-800';
+nameEl.textContent = friend.name;
+const emailEl = document.createElement('p');
+emailEl.className = 'text-sm text-gray-500';
+emailEl.textContent = friend.email;
+
+textContainer.appendChild(nameEl);
+textContainer.appendChild(emailEl);
+li.appendChild(avatar);
+li.appendChild(textContainer);
+friendList.appendChild(li);
+});
+} else {
+friendList.innerHTML = '<p class="text-center text-gray-400 mt-4">No friends added. Add someone to start chatting!</p>';
+}
+});
+};
+
+const selectChat = async (friend) => {
+chatWindow.classList.remove('hidden');
+activeChatId = generateChatId(userId, friend.id);
+activeFriendData = friend;
+activeChatName.textContent = friend.name;
+
+if (userId) {
+await updateDoc(doc(db, `artifacts/${appId}/users/${userId}`), {
+activeChatId: activeChatId
+});
+}
+
+if (friend.profilePicUrl) {
+activeChatAvatar.innerHTML = `<img src="${friend.profilePicUrl}" class="w-full h-full rounded-full object-cover">`;
+} else {
+activeChatAvatar.innerHTML = '';
+activeChatAvatar.textContent = friend.name.charAt(0).toUpperCase();
+}
+
+if (unsubscribeFriendStatus) {
+unsubscribeFriendStatus();
+}
+unsubscribeFriendStatus = onSnapshot(doc(db, `artifacts/${appId}/users/${friend.id}`), (docSnapshot) => {
+if (docSnapshot.exists()) {
+const friendData = docSnapshot.data();
+const now = Date.now();
+const lastSeenDate = friendData.lastSeen ? friendData.lastSeen.toDate().getTime() : 0;
+const isOnline = (now - lastSeenDate) < 60000;
+const isActiveInChat = friendData.activeChatId === activeChatId;
+
+if (isOnline && isActiveInChat) {
+activeChatStatus.textContent = 'Online';
+activeChatStatus.classList.remove('text-gray-500');
+activeChatStatus.classList.add('text-green-500');
+} else {
+activeChatStatus.textContent = formatLastSeen(friendData.lastSeen);
+activeChatStatus.classList.remove('text-green-500');
+activeChatStatus.classList.add('text-gray-500');
+}
+}
+});
+
+if (unsubscribeChatListener) {
+unsubscribeChatListener();
+}
+
+messageContainer.innerHTML = '';
+
+const chatQuery = query(collection(db, `artifacts/${appId}/public/data/chats`), where('chatId', '==', activeChatId));
+unsubscribeChatListener = onSnapshot(chatQuery, async (querySnapshot) => {
+const newMessages = [];
+querySnapshot.docs.forEach(doc => {
+const data = doc.data();
+newMessages.push({
+id: doc.id,
+...data
+});
+});
+
+newMessages.sort((a, b) => a.timestamp - b.timestamp);
+
+const currentMessageIds = Array.from(messageContainer.children).map(el => el.dataset.messageId);
+let latestMessage = null;
+
+newMessages.forEach(async msg => {
+if (!currentMessageIds.includes(msg.id)) {
+latestMessage = msg; // Track the absolute latest message
+const messageEl = document.createElement('div');
+messageEl.dataset.messageId = msg.id;
+const isMyMessage = msg.senderId === userId;
+messageEl.className = `flex ${isMyMessage ? 'justify-end' : 'justify-start'}`;
+
+const bubble = document.createElement('div');
+bubble.className = `p-3 rounded-2xl max-w-[70%] text-sm ${
+isMyMessage ? 'bg-green-500 text-white rounded-br-none' : 'bg-gray-200 text-gray-800 rounded-bl-none'
+} shadow-sm message-bubble`;
+
+if (msg.replyTo) {
+const replyPreview = document.createElement('div');
+replyPreview.className = `border-l-4 p-2 mb-2 ${isMyMessage ? 'border-white/50' : 'border-gray-500/50'} bg-black/10 rounded-r-md`;
+const replySenderName = document.createElement('p');
+replySenderName.className = `text-xs font-semibold ${isMyMessage ? 'text-white' : 'text-blue-600'}`;
+replySenderName.textContent = msg.replyTo.senderName;
+const replyTextContent = document.createElement('p');
+replyTextContent.className = 'text-xs italic truncate';
+replyTextContent.textContent = msg.replyTo.text;
+
+replyPreview.appendChild(replySenderName);
+replyPreview.appendChild(replyTextContent);
+bubble.appendChild(replyPreview);
+}
+
+const messageTextSpan = document.createElement('span');
+messageTextSpan.textContent = msg.text;
+messageTextSpan.className = 'message-text';
+bubble.appendChild(messageTextSpan);
+
+const timeAndTickSpan = document.createElement('div');
+timeAndTickSpan.className = 'ml-2 text-[10px] flex items-center space-x-1';
+
+if (msg.timestamp) {
+const timeSpan = document.createElement('span');
+timeSpan.textContent = new Date(msg.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+timeAndTickSpan.appendChild(timeSpan);
+}
+
+if (isMyMessage) {
+const tickSpan = document.createElement('span');
+let tickIcon = '';
+if (msg.status === 'sent') {
+tickIcon = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white/50" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15.707a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L7 13.586l8.293-8.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>';
+} else if (msg.status === 'delivered') {
+tickIcon = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white/50" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414L8.414 15.707a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L7 13.586l8.293-8.293a1 1 0 011.414 0z" /><path d="M16.707 5.293a1 1 0 010 1.414L8.414 15.707a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L7 13.586l8.293-8.293a1 1 0 011.414 0z" /></svg>';
+} else if (msg.status === 'read') {
+tickIcon = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-400" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414L8.414 15.707a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L7 13.586l8.293-8.293a1 1 0 011.414 0z" /><path d="M16.707 5.293a1 1 0 010 1.414L8.414 15.707a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L7 13.586l8.293-8.293a1 1 0 011.414 0z" /></svg>';
+}
+tickSpan.innerHTML = tickIcon;
+timeAndTickSpan.appendChild(tickSpan);
+}
+bubble.appendChild(timeAndTickSpan);
+messageEl.appendChild(bubble);
+
+bubble.addEventListener('click', () => {
+replyToMessage = {
+id: msg.id,
+text: msg.text,
+senderName: isMyMessage ? 'You' : friend.name
+};
+replySender.textContent = replyToMessage.senderName;
+replyText.textContent = replyToMessage.text;
+replyBar.classList.remove('hidden');
+messageInput.focus();
+});
+
+messageContainer.appendChild(messageEl);
+
+if (!isMyMessage && msg.status === 'delivered') {
+await updateDoc(doc(db, `artifacts/${appId}/public/data/chats/${msg.id}`), {
+status: 'read'
+});
+}
+
+} else {
+const existingMessageEl = document.querySelector(`[data-message-id="${msg.id}"]`);
+if (existingMessageEl) {
+const tickSpan = existingMessageEl.querySelector('div.ml-2 span:last-child');
+if (tickSpan) {
+if (msg.status === 'delivered') {
+tickSpan.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white/50" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414L8.414 15.707a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L7 13.586l8.293-8.293a1 1 0 011.414 0z" /><path d="M16.707 5.293a1 1 0 010 1.414L8.414 15.707a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L7 13.586l8.293-8.293a1 1 0 011.414 0z" /></svg>';
+} else if (msg.status === 'read') {
+tickSpan.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-400" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414L8.414 15.707a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L7 13.586l8.293-8.293a1 1 0 011.414 0z" /><path d="M16.707 5.293a1 1 0 010 1.414L8.414 15.707a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L7 13.586l8.293-8.293a1 1 0 011.414 0z" /></svg>';
+}
+}
+}
+}
+});
+
+// --- NEW AI REPLY LOGIC ---
+if (isAIToggled && latestMessage && latestMessage.senderId !== userId) {
+    // Only reply to the latest message if it's from the other user and AI is active
+    showLoading(true);
+    // Use setTimeout to simulate typing delay
+    setTimeout(async () => {
+        const prompt = latestMessage.text;
+        const aiReply = await getAIResponse(prompt);
+        showLoading(false);
+
+        if (aiReply) {
+            await addDoc(collection(db, `artifacts/${appId}/public/data/chats`), {
+                chatId: activeChatId,
+                senderId: userId, // The AI replies as the current user
+                text: aiReply,
+                timestamp: serverTimestamp(),
+                status: 'sent',
+                isAI: true // Optional flag for tracking AI messages
+            });
+        }
+    }, 1500 + Math.random() * 1000); // 1.5 to 2.5 seconds delay
+}
+// --- END NEW AI REPLY LOGIC ---
+
+messageContainer.scrollTop = messageContainer.scrollHeight;
+});
+};
+
+googleSignInBtn.addEventListener('click', async () => {
+showLoading(true);
+try {
+const provider = new GoogleAuthProvider();
+const result = await signInWithPopup(auth, provider);
+} catch (error) {
+showLoading(false);
+console.error("Google Sign-In Failed:", error);
+const errorMessage = error.message;
+showModal("Error", `Sign-in failed. Error: ${errorMessage}`);
+}
+});
+
+signOutBtn.addEventListener('click', async () => {
+showLoading(true);
+try {
+if (userId) {
+const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
+await updateDoc(userDocRef, {
+lastSeen: serverTimestamp(),
+activeChatId: null,
+});
+}
+clearInterval(statusUpdateInterval);
+await signOut(auth);
+} catch (error) {
+showLoading(false);
+console.error("Sign-Out Failed:", error);
+showModal("Error", "Sign-out failed. Please try again.");
+}
+});
+
+addFriendBtn.addEventListener('click', () => {
+showModal("Add Friend", "Enter the email of the person you want to chat with:", true, "Enter friend's email", "Add");
+});
+
+const confirmModalAction = async () => {
+if (modalConfirmBtn.textContent === 'Add') {
+if (!auth.currentUser) {
+showModal("Error", "You must be signed in to add friends.");
+showLoading(false);
+return;
+}
+
+const friendEmail = modalInput.value.trim();
+if (!friendEmail) {
+showModal("Validation Error", "Please enter a valid email address.");
+return;
+}
+if (friendEmail === auth.currentUser.email) {
+showModal("Error", "You cannot add yourself as a friend.");
+return;
+}
+
+hideModal();
+showLoading(true);
+
+try {
+const usersRef = collection(db, `artifacts/${appId}/users`);
+const q = query(usersRef, where('email', '==', friendEmail));
+const querySnapshot = await getDocs(q);
+
+if (querySnapshot.empty) {
+showLoading(false);
+showModal("User Not Found", `The email '${friendEmail}' was not found. You can invite them to join the app.`);
+} else {
+const friendDoc = querySnapshot.docs[0];
+const friendData = friendDoc.data();
+const friendId = friendDoc.id;
+
+const userDocSnap = await getDoc(doc(db, `artifacts/${appId}/users/${auth.currentUser.uid}`));
+const currentFriends = userDocSnap.data().friends || [];
+const isFriendAlreadyAdded = currentFriends.some(f => f.id === friendId);
+
+if (isFriendAlreadyAdded) {
+showLoading(false);
+showModal("Already Friends", `${friendData.name} (${friendData.email}) is already in your friend list.`);
+return;
+}
+
+await updateDoc(doc(db, `artifacts/${appId}/users/${auth.currentUser.uid}`), {
+friends: [...currentFriends, {
+id: friendId,
+name: friendData.name,
+email: friendData.email,
+profilePicUrl: friendData.profilePicUrl || ''
+}]
+});
+
+showLoading(false);
+showModal("Success", `${friendData.name} (${friendData.email}) has been added to your friend list.`);
+}
+} catch (error) {
+showLoading(false);
+console.error("Adding friend failed:", error);
+showModal("Error", "Failed to add friend. Please try again.");
+}
+}
+};
+
+modalConfirmBtn.addEventListener('click', confirmModalAction);
+
+addProfileBtn.addEventListener('click', () => {
+settingsModal.classList.remove('hidden');
+onSnapshot(doc(db, `artifacts/${appId}/users/${userId}`), (docSnapshot) => {
+if (docSnapshot.exists()) {
+const userData = docSnapshot.data();
+statusInput.value = userData.status || '';
+if (userData.profilePicUrl) {
+currentProfilePic.src = userData.profilePicUrl;
+} else {
+currentProfilePic.src = 'https://placehold.co/100x100/CCCCCC/666666?text=N/A';
+}
+}
+});
+});
+
+settingsBtn.addEventListener('click', () => {
+settingsModal.classList.remove('hidden');
+onSnapshot(doc(db, `artifacts/${appId}/users/${userId}`), (docSnapshot) => {
+if (docSnapshot.exists()) {
+const userData = docSnapshot.data();
+statusInput.value = userData.status || '';
+if (userData.profilePicUrl) {
+currentProfilePic.src = userData.profilePicUrl;
+} else {
+currentProfilePic.src = 'https://placehold.co/100x100/CCCCCC/666666?text=N/A';
+}
+}
+});
+});
+
+closeSettingsBtn.addEventListener('click', () => {
+settingsModal.classList.add('hidden');
+});
+
+saveStatusBtn.addEventListener('click', async () => {
+const newStatus = statusInput.value;
+if (userId) {
+await updateDoc(doc(db, `artifacts/${appId}/users/${userId}`), {
+status: newStatus
+});
+showModal("Status Saved", "Your status has been updated successfully.");
+}
+});
+
+profilePicInput.addEventListener('change', async (e) => {
+const file = e.target.files[0];
+if (!file) {
+return;
+}
+
+const storageRef = ref(storage, `profile_pics/${userId}/${file.name}`);
+const uploadTask = uploadBytesResumable(storageRef, file);
+
+uploadProgressContainer.classList.remove('hidden');
+uploadTask.on('state_changed',
+(snapshot) => {
+const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+uploadProgressBar.style.width = progress + '%';
+},
+(error) => {
+console.error("Upload failed:", error);
+uploadProgressContainer.classList.add('hidden');
+showModal("Upload Failed", "There was an error uploading your image. Please try again.");
+},
+() => {
+getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+await updateDoc(doc(db, `artifacts/${appId}/users/${userId}`), {
+profilePicUrl: downloadURL
+});
+uploadProgressContainer.classList.add('hidden');
+showModal("Upload Successful", "Your profile picture has been updated.");
+});
+}
+);
+});
+
+chatHeaderProfile.addEventListener('click', () => {
+if (activeFriendData) {
+profileModal.classList.remove('hidden');
+profileNameModal.textContent = activeFriendData.name;
+profileStatusModal.textContent = activeFriendData.status || 'No status set';
+if (activeFriendData.profilePicUrl) {
+profilePicModal.src = activeFriendData.profilePicUrl;
+} else {
+profilePicModal.src = 'https://placehold.co/150x150/CCCCCC/666666?text=N/A';
+}
+
+onSnapshot(doc(db, `artifacts/${appId}/users/${userId}`), (docSnapshot) => {
+const userData = docSnapshot.data();
+const blockedUsers = userData.blockedUsers || [];
+if (blockedUsers.includes(activeFriendData.id)) {
+blockBtn.classList.add('hidden');
+unblockBtn.classList.remove('hidden');
+} else {
+blockBtn.classList.remove('hidden');
+unblockBtn.classList.add('hidden');
+}
+});
+}
+});
+
+closeProfileBtn.addEventListener('click', () => {
+profileModal.classList.add('hidden');
+});
+
+blockBtn.addEventListener('click', async () => {
+if (activeFriendData) {
+const userDocSnap = await getDoc(doc(db, `artifacts/${appId}/users/${userId}`));
+const blockedUsers = userDocSnap.data().blockedUsers || [];
+
+if (!blockedUsers.includes(activeFriendData.id)) {
+await updateDoc(doc(db, `artifacts/${appId}/users/${userId}`), {
+blockedUsers: [...blockedUsers, activeFriendData.id]
+});
+showModal("User Blocked", `${activeFriendData.name} has been blocked.`);
+blockBtn.classList.add('hidden');
+unblockBtn.classList.remove('hidden');
+}
+}
+});
+
+unblockBtn.addEventListener('click', async () => {
+if (activeFriendData) {
+const userDocSnap = await getDoc(doc(db, `artifacts/${appId}/users/${userId}`));
+const blockedUsers = userDocSnap.data().blockedUsers || [];
+
+if (blockedUsers.includes(activeFriendData.id)) {
+await updateDoc(doc(db, `artifacts/${appId}/users/${userId}`), {
+blockedUsers: blockedUsers.filter(id => id !== activeFriendData.id)
+});
+showModal("User Unblocked", `${activeFriendData.name} has been unblocked.`);
+unblockBtn.classList.add('hidden');
+blockBtn.classList.remove('hidden');
+}
+}
+});
+
+callBtn.addEventListener('click', () => {
+if (!activeChatId) {
+showModal("Error", "Please select a friend to call.");
+return;
+}
+callingModal.classList.remove('hidden');
+callingName.textContent = activeChatName.textContent;
+callingText.textContent = `Calling ${activeChatName.textContent}...`;
+
+setTimeout(() => {
+if (!callingModal.classList.contains('hidden')) {
+callingText.textContent = "No answer";
+setTimeout(() => {
+callingModal.classList.add('hidden');
+}, 2000);
+}
+}, 10000);
+});
+
+endCallBtn.addEventListener('click', () => {
+callingModal.classList.add('hidden');
+});
+
+videoCallBtn.addEventListener('click', () => {
+if (!activeChatId) {
+showModal("Error", "Please select a friend to video call.");
+return;
+}
+videoCallingModal.classList.remove('hidden');
+videoCallingName.textContent = activeChatName.textContent;
+videoCallingText.textContent = `Video calling ${activeChatName.textContent}...`;
+
+setTimeout(() => {
+if (!videoCallingModal.classList.contains('hidden')) {
+videoCallingText.textContent = "No answer";
+setTimeout(() => {
+callingModal.classList.add('hidden');
+}, 2000);
+}
+}, 10000);
+});
+
+endVideoCallBtn.addEventListener('click', () => {
+videoCallingModal.classList.add('hidden');
+});
+
+modalOkBtn.addEventListener('click', () => hideModal());
+modalCancelBtn.addEventListener('click', () => hideModal());
+
+
+sendBtn.addEventListener('click', async () => {
+if (!activeChatId) {
+showModal("Error", "Please select a friend to start chatting.");
+return;
+}
+
+const messageText = messageInput.value.trim();
+if (messageText) {
+try {
+const messageData = {
+chatId: activeChatId,
+senderId: userId,
+text: messageText,
+timestamp: serverTimestamp(),
+status: 'sent'
+};
+
+if (replyToMessage) {
+messageData.replyTo = {
+id: replyToMessage.id,
+text: replyToMessage.text,
+senderName: replyToMessage.senderName
+};
+}
+
+await addDoc(collection(db, `artifacts/${appId}/public/data/chats`), messageData);
+messageInput.value = '';
+cancelReply();
+} catch (error) {
+console.error("Error sending message:", error);
+showModal("Error", "Failed to send message. Please try again.");
+}
+}
+});
+
+const cancelReply = () => {
+replyToMessage = null;
+replyBar.classList.add('hidden');
+};
+
+cancelReplyBtn.addEventListener('click', cancelReply);
+
+emojiBtn.addEventListener('click', (e) => {
+e.stopPropagation();
+emojiPicker.classList.toggle('visible');
+});
+
+document.addEventListener('click', async (e) => {
+if (!emojiPicker.contains(e.target) && !emojiBtn.contains(e.target)) {
+emojiPicker.classList.remove('visible');
+}
+});
+
+const populateEmojiPicker = () => {
+emojis.forEach(emoji => {
+const span = document.createElement('span');
+span.textContent = emoji;
+span.className = 'emoji';
+span.addEventListener('click', (e) => {
+messageInput.value += emoji;
+messageInput.focus();
+});
+emojiPicker.appendChild(span);
+});
+};
+
+window.onload = () => {
+initFirebase();
+populateEmojiPicker();
+};
+</script>
+</body>
+</html>
