@@ -450,7 +450,13 @@ const getAIResponse = async (prompt) => {
     const API_KEY = "AIzaSyBfdjHL2DN8swGFZn5PwbvLQCOpHE5xJj8"; // <-- REPLACE THIS WITH YOUR KEY
     const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
-    const systemPrompt = "You are a friendly, empathetic, and natural chat assistant. Your goal is to keep the conversation flowing. Analyze the user's message and generate a concise, contextually appropriate response. Reply in the same language (Hindi or English) as the user's message, but always use a friendly tone.";
+    // --- UPDATED SYSTEM PROMPT FOR CASUAL/HINGLISH TONE ---
+    const systemPrompt = `You are an informal, chill, and friendly AI assistant acting as the user's close buddy. 
+    Your language style must be casual, conversational, and often use common Hindi/Hinglish chat words like 'bhayi', 'yaar', 'mast', 'chalo', 'haan', 'acha', etc. 
+    Keep responses short, witty, and relevant to the user's chat message. 
+    Analyze the incoming message's emotion and context, and respond naturally, using emojis liberally.
+    Always reply in the same language (Hindi/Hinglish or English) as the last message received.`;
+    // --- END UPDATED SYSTEM PROMPT ---
 
     const payload = {
         contents: [
@@ -484,11 +490,11 @@ const getAIResponse = async (prompt) => {
         if (aiMessage) {
             return aiMessage.trim();
         } else {
-            return "I'm sorry, I couldn't generate a reply right now.";
+            return "Yaar, network mein kuch gadbad hai. Phir se try kar. 🤔"; // Personalized error message
         }
     } catch (error) {
         console.error("Error fetching AI response:", error);
-        return "Oops! AI service is temporarily unavailable.";
+        return "Bhayi, AI service abhi busy hai. Thoda ruk jaa. 🙏"; // Personalized error message
     }
 };
 
@@ -504,24 +510,24 @@ const toggleAI = (enable, minutes = null) => {
              // Set timer
             aiTimerId = setTimeout(() => {
                 toggleAI(false);
-                showModal("AI Auto-Reply", `AI auto-reply timer finished! It has been turned off after ${minutes} minutes.`, false);
+                showModal("AI Auto-Reply", `AI ka time khatam! ${minutes} minutes ke baad band ho gaya hai.`, false);
             }, minutes * 60 * 1000);
-            showModal("AI Activated", `AI Auto-Reply is ON for ${minutes} minutes.`);
+            showModal("AI Activated", `AI Auto-Reply ON hai ${minutes} minutes ke liye. Chalo, mast chat karo! 😎`);
         } else {
-            showModal("AI Activated", "AI Auto-Reply is ON (No timer set).");
+            showModal("AI Activated", "AI Auto-Reply ON hai (Jab tak tum band nahi karte).");
         }
     } else {
         aiToggleBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
         aiToggleBtn.classList.add('bg-purple-500', 'hover:bg-purple-600');
         if (!minutes) { // Only show modal if triggered manually, not by timer finishing
-            showModal("AI Deactivated", "AI Auto-Reply is now OFF.");
+            showModal("AI Deactivated", "AI Auto-Reply ab OFF ho gaya hai.");
         }
     }
 };
 
 aiToggleBtn.addEventListener('click', () => {
     if (!activeChatId) {
-        showModal("Error", "Please select a friend before toggling the AI feature.");
+        showModal("Error", "Bhayi, pehle ek dost ko toh select kar lo!");
         return;
     }
     
@@ -530,8 +536,8 @@ aiToggleBtn.addEventListener('click', () => {
         toggleAI(false);
     } else {
         // Manual ON - Show timer modal
-        modalTitle.textContent = "Activate AI Auto-Reply";
-        modalMessage.textContent = "Enter a duration in minutes for the AI to reply, or leave blank for unlimited (until manually turned off).";
+        modalTitle.textContent = "AI Auto-Reply Activate Karo";
+        modalMessage.textContent = "Kitne minutes ke liye AI se reply karwana hai? (Khali chhodoge toh jab tak manual band nahi karte, chalta rahega)";
         modalInput.style.display = 'none';
         modalTimerInput.style.display = 'block';
         modalConfirmBtn.textContent = 'Activate';
