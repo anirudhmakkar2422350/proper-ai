@@ -341,7 +341,7 @@ Save Status
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
-import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, onSnapshot, collection, query, where, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, onSnapshot, collection, query, where, orderBy, limit, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-storage.js";
 
 const firebaseConfig = {
@@ -364,6 +364,7 @@ let unsubscribeChatListener = null;
 let unsubscribeFriendStatus = null;
 let replyToMessage = null;
 let statusUpdateInterval;
+let userToneHistory = []; // GLOBAL: Stores messages sent by the current user for tone mimicry
 
 // --- NEW AI FEATURE STATE ---
 let isAIToggled = false;
@@ -443,25 +444,56 @@ const aiToggleBtn = document.getElementById('ai-toggle-btn'); // NEW
 
 // --- NEW AI FEATURE FUNCTIONS ---
 
-const getAIResponse = async (prompt) => {
+/**
+ * Fetches the user's last 10 sent messages to learn their chat tone.
+ */
+const loadUserToneHistory = async (currentUserId) => {
+    if (!db) return;
+    try {
+        // Query last 10 messages sent by the current user across all chats
+        const q = query(
+            collection(db, `artifacts/${appId}/public/data/chats`),
+            where('senderId', '==', currentUserId),
+            orderBy('timestamp', 'desc'),
+            limit(10)
+        );
+        const querySnapshot = await getDocs(q);
+        
+        userToneHistory = querySnapshot.docs.map(doc => doc.data().text).join('\n');
+        console.log("User tone history loaded for AI:", userToneHistory);
+
+    } catch (error) {
+        console.error("Error loading user tone history:", error);
+        userToneHistory = ""; // Clear history if fetching fails
+    }
+}
+
+
+const getAIResponse = async (prompt, userTone) => {
     // !!! IMPORTANT !!!
     // PASTE YOUR GEMINI API KEY HERE. This is insecure for production;
     // use a secure backend service to proxy calls for real applications.
     const API_KEY = "AIzaSyBfdjHL2DN8swGFZn5PwbvLQCOpHE5xJj8"; // <-- REPLACE THIS WITH YOUR KEY
     const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
-    // --- UPDATED SYSTEM PROMPT FOR CASUAL/HINGLISH TONE ---
-    const systemPrompt = `You are an informal, chill, and friendly AI assistant acting as the user's close buddy. 
-    Your language style must be casual, conversational, and often use common Hindi/Hinglish chat words like 'bhayi', 'yaar', 'mast', 'chalo', 'haan', 'acha', etc. 
-    Keep responses short, witty, and relevant to the user's chat message. 
-    Analyze the incoming message's emotion and context, and respond naturally, using emojis liberally.
-    Always reply in the same language (Hindi/Hinglish or English) as the last message received.`;
+    // --- DYNAMIC SYSTEM PROMPT FOR TONE MIMICRY AND SENTIMENT RESPONSE ---
+    const toneMessages = userTone || "The user has no recent messages to learn from.";
+    
+    const systemPrompt = `Your role is to act as the user's close, casual friend. 
+    
+    1. TONE MIMICRY: Analyze the following list of the user's recent messages. **You must perfectly mimic the user's unique slang, grammar (Hinglish/Hindi or English), and casual, informal conversational style.** Your tone must sound exactly like the user.
+    USER'S RECENT MESSAGES:
+    ---
+    ${toneMessages}
+    ---
+
+    2. SENTIMENT RESPONSE: Based on the latest message you received (the prompt), first identify the emotion (happy, confused, urgent, sad, excited, etc.) of the sender. Then, reply in a way that is natural and empathetic to that emotion, using the learned tone. Keep responses short, witty, and relevant. Use appropriate emojis.`;
     // --- END UPDATED SYSTEM PROMPT ---
 
     const payload = {
         contents: [
             {
-                parts: [{ text: prompt }]
+                parts: [{ text: `Latest incoming message: ${prompt}` }]
             }
         ],
         systemInstruction: {
@@ -504,6 +536,9 @@ const toggleAI = (enable, minutes = null) => {
     aiTimerId = null;
 
     if (enable) {
+        if (!userToneHistory || userToneHistory.length < 50) {
+            showModal("AI Warning", "Bhayi, AI ko tumhari tone sikhne ke liye zyada messages nahi mile. Reply thode generic ho sakte hain. Chat chalu rakho!", false);
+        }
         aiToggleBtn.classList.remove('bg-purple-500', 'hover:bg-purple-600');
         aiToggleBtn.classList.add('bg-green-500', 'hover:bg-green-600');
         if (minutes) {
@@ -620,6 +655,10 @@ if (user) {
 userId = user.uid;
 const userEmail = user.email || 'N/A';
 userIdDisplay.textContent = `User ID: ${userId}, Email: ${userEmail}`;
+
+// *** IMPORTANT: Load user tone history upon successful sign-in ***
+await loadUserToneHistory(userId);
+
 
 const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}`);
 
@@ -884,7 +923,8 @@ if (isAIToggled && latestMessage && latestMessage.senderId !== userId) {
     // Use setTimeout to simulate typing delay
     setTimeout(async () => {
         const prompt = latestMessage.text;
-        const aiReply = await getAIResponse(prompt);
+        // Pass the globally loaded user tone history
+        const aiReply = await getAIResponse(prompt, userToneHistory);
         showLoading(false);
 
         if (aiReply) {
@@ -1267,3 +1307,4 @@ populateEmojiPicker();
 </script>
 </body>
 </html>
+
